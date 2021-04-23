@@ -1,8 +1,8 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter/widgets.dart';
 
-typedef MoneyBeforeChangeCallback = bool Function(Decimal previous, Decimal next);
-typedef MoneyAfterChangeCallback = void Function(Decimal previous, Decimal next);
+typedef MoneyBeforeChangeCallback = bool Function(String previous, Decimal next);
+typedef MoneyAfterChangeCallback = void Function(String previous, Decimal next);
 
 /// A [TextEditingController] extended to apply masks to currency values
 class MoneyMaskedTextController extends TextEditingController {
@@ -36,16 +36,15 @@ class MoneyMaskedTextController extends TextEditingController {
 
           parts.insert(parts.length - precision, '.');
 
-          final previous = _lastValue;
+          final previous = _lastUpdatedText;
 
 
           if (beforeChange!(previous, Decimal.parse(parts.join()))) {
             updateValue(Decimal.parse(parts.join()));
             afterChange!(previous, Decimal.parse(parts.join()));
           } else {
-            updateValue(previous);
+            updateValue(_lastValue);
           }
-          updateValue(Decimal.parse(parts.join()));
         }
       }
     });
@@ -79,7 +78,7 @@ class MoneyMaskedTextController extends TextEditingController {
   final int precision;
 
   /// The last valid numeric value
-  Decimal _lastValue = Decimal.zero;
+  Decimal? _lastValue;
 
   /// A function called before the text is updated.
   /// Returns a boolean informing whether the text should be updated.
@@ -91,6 +90,9 @@ class MoneyMaskedTextController extends TextEditingController {
   ///
   /// Defaults to an empty function
   MoneyAfterChangeCallback? afterChange;
+
+  String _lastUpdatedText = '';
+
 
   /// Used to ensure that the listener will not try to update the mask when
   /// updating the text internally, thus reducing the number of operations when

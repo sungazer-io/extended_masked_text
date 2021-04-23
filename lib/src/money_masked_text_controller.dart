@@ -1,9 +1,10 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/widgets.dart';
 
 /// A [TextEditingController] extended to apply masks to currency values
 class MoneyMaskedTextController extends TextEditingController {
   MoneyMaskedTextController({
-    double? initialValue,
+    Decimal? initialValue,
     this.decimalSeparator = ',',
     this.thousandSeparator = '.',
     this.rightSymbol = '',
@@ -25,12 +26,12 @@ class MoneyMaskedTextController extends TextEditingController {
           }
 
           parts.insert(parts.length - precision, '.');
-          updateValue(double.parse(parts.join()));
+          updateValue(Decimal.parse(parts.join()));
         }
       }
     });
 
-    updateValue(initialValue);
+    updateValue(initialValue ?? Decimal.zero);
   }
 
   /// Character used as decimal separator
@@ -59,7 +60,7 @@ class MoneyMaskedTextController extends TextEditingController {
   final int precision;
 
   /// The last valid numeric value
-  double? _lastValue;
+  Decimal? _lastValue;
 
   /// Used to ensure that the listener will not try to update the mask when
   /// updating the text internally, thus reducing the number of operations when
@@ -67,26 +68,26 @@ class MoneyMaskedTextController extends TextEditingController {
   late bool _shouldApplyTheMask;
 
   /// The numeric value of the text
-  double get numberValue {
+  Decimal get numberValue {
     final parts = _getOnlyNumbers(text).split('').toList(growable: true);
 
     if (parts.isEmpty) {
-      return 0;
+      return Decimal.zero;
     }
 
     parts.insert(parts.length - precision, '.');
-    return double.parse(parts.join());
+    return Decimal.parse(parts.join());
   }
 
   static const int _maxNumLength = 12;
 
   /// Updates the value and applies the mask
-  void updateValue(double? value) {
+  void updateValue(Decimal? value) {
     if (value == null) {
       return;
     }
 
-    double? valueToUse = value;
+    Decimal? valueToUse = value;
 
     if (value.toStringAsFixed(0).length > _maxNumLength) {
       valueToUse = _lastValue;
@@ -194,7 +195,7 @@ class MoneyMaskedTextController extends TextEditingController {
   String _getOnlyNumbers(String text) => text.replaceAll(RegExp(r'[^\d]'), '');
 
   /// Returns a masked String applying the mask to the value
-  String _applyMask(double value) {
+  String _applyMask(Decimal value) {
     final textRepresentation = value
         .toStringAsFixed(precision)
         .replaceAll('.', '')

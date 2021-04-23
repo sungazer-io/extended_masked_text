@@ -1,6 +1,9 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter/widgets.dart';
 
+typedef MoneyBeforeChangeCallback = bool Function(Decimal previous, Decimal next);
+typedef MoneyAfterChangeCallback = void Function(Decimal previous, Decimal next);
+
 /// A [TextEditingController] extended to apply masks to currency values
 class MoneyMaskedTextController extends TextEditingController {
   MoneyMaskedTextController({
@@ -10,10 +13,16 @@ class MoneyMaskedTextController extends TextEditingController {
     this.rightSymbol = '',
     this.leftSymbol = '',
     this.precision = 2,
+    this.beforeChange,
+    this.afterChange,
   }) {
     _validateConfig();
     _shouldApplyTheMask = true;
 
+    // Initialize the beforeChange and afterChange callbacks if they are null
+    beforeChange ??= (previous, next) => true;
+    afterChange ??= (previous, next) {};
+    
     addListener(() {
       if (_shouldApplyTheMask) {
         var parts = _getOnlyNumbers(text).split('').toList(growable: true);
@@ -26,6 +35,16 @@ class MoneyMaskedTextController extends TextEditingController {
           }
 
           parts.insert(parts.length - precision, '.');
+
+          final previous = _lastValue;
+
+
+          if (beforeChange!(previous, Decimal.parse(parts.join()))) {
+            updateValue(Decimal.parse(parts.join()));
+            afterChange!(previous, Decimal.parse(parts.join()));
+          } else {
+            updateValue(previous);
+          }
           updateValue(Decimal.parse(parts.join()));
         }
       }
@@ -60,7 +79,18 @@ class MoneyMaskedTextController extends TextEditingController {
   final int precision;
 
   /// The last valid numeric value
-  Decimal? _lastValue;
+  Decimal _lastValue = Decimal.zero;
+
+  /// A function called before the text is updated.
+  /// Returns a boolean informing whether the text should be updated.
+  ///
+  /// Defaults to a function returning true
+  MoneyBeforeChangeCallback? beforeChange;
+
+  /// A function called after the text is updated
+  ///
+  /// Defaults to an empty function
+  MoneyAfterChangeCallback? afterChange;
 
   /// Used to ensure that the listener will not try to update the mask when
   /// updating the text internally, thus reducing the number of operations when
